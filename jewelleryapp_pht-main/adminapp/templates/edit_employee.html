@@ -1,0 +1,101 @@
+{% extends 'admin_index.html' %}
+
+{% block content %}
+<style>
+    .form-container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        max-width: 500px;
+        margin: 50px auto;
+    }
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    input, button {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        box-sizing: border-box;
+    }
+    button {
+        background-color: #6f4ec7;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    button:hover {
+        background-color: #5a3db5;
+    }
+    label {
+        font-weight: bold;
+        margin-top: 10px;
+        display: inline-block;
+    }
+    .message {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: bold;
+    }
+    .success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    :root {
+        --primary-color: #8ea7e9;
+        --secondary-color: #6f4ec7;
+        --background-color: #f9f9f9;
+        --text-color: #333;
+        --hover-color: #e8f4fd;
+    }
+    h2 {
+        font-size: 26px;
+        color: var(--primary-color);
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        font-weight: 600;
+        text-align: center;
+    }
+</style>
+
+<div class="form-container">
+    <h2>Edit Employee</h2>
+
+    {% if messages %}
+        <div class="message-container">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{% url 'edit_employee' %}?id={{employee.id}}">
+        {% csrf_token %}
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ employee.name }}" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" value="{{ employee.email }}" required>
+
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" name="phone" value="{{ employee.phone }}">
+
+        <label for="password">Password:</label>
+        <input type="text" id="password" name="password" value="{{ employee.password }}">
+
+        <button type="submit">Update Employee</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends 'admin_index.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-color: #8ea7e9;
+        --secondary-color: #6f4ec7;
+        --background-color: #f9f9f9;
+        --text-color: #333;
+        --hover-color: #e8f4fd;
+    }
+    .table-container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        max-width: 90%;
+        margin: 50px auto;
+        overflow-x: auto;
+    }
+    h2 {
+        font-size: 26px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        font-weight: 600;
+        color: #8ea7e9;
+        text-align: center;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    table, th, td {
+        border: 1px solid #ddd;
+    }
+    th, td {
+        padding: 12px;
+        text-align: center;
+    }
+    th {
+        background-color: #8ea7e9;
+        color: white;
+        text-transform: uppercase;
+    }
+    tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    tr:hover {
+        background-color: #f1f1f1;
+    }
+    .action-btn {
+        padding: 5px 10px;
+        border: none;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .edit-btn {
+        background-color: #ffc107;
+        color: black;
+    }
+    .delete-btn {
+        background-color: #dc3545;
+        color: white;
+    }
+    .edit-btn:hover, .delete-btn:hover {
+        opacity: 0.8;
+    }
+    img {
+        width: 100px;
+        /* Set the desired width */
+        height: 80px;
+        /* Set the desired height */
+        object-fit: cover;
+        /* Ensures image covers the area without distortion */
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .button {
+        background: var(--secondary-color);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 30px;
+        text-decoration: none;
+        display: inline-block;
+        margin-bottom: 30px;
+        font-size: 16px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .button:hover {
+        background: #7b5eca;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    .add-btn {
+        display: inline-block;
+        background-color: #6f4ec7;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+    .add-btn:hover {
+        background-color: #6f4ec7;
+    }
+</style>
+
+<div class="table-container">
+    <h2>Employee List</h2>
+        <a href="{% url 'add_employee' %}" class="add-btn">+ Add New Employee</a>
+
+    {% if messages %}
+        <div class="message-container">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Position</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for employee in employees %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        {% if employee.photo %}
+                        <img src="{{ employee.photo.url }}" alt="Main Image">
+                    {% else %}
+                        <span>No Image</span>
+                    {% endif %}
+                    </td>
+                    <td>{{ employee.name }}</td>
+                    <td>{{ employee.email }}</td>
+                    <td>{{ employee.phone }}</td>
+                    <td>{{ employee.position }}</td>
+                    <td>
+                        <a href="{% url 'edit_employee' %}?id={{employee.id}}" class="add-btn">Edit</a>
+                        <a href="{% url 'delete_employee' %}?id={{employee.id}}" class="add-btn" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a> 
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">No employees found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

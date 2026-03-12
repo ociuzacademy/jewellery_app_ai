@@ -58,6 +58,22 @@ dist/
 *.ipr
 *.iws
 
+# Python / Django (Backend)
+# -------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+db.sqlite3
+db.sqlite3-journal
+**/media/
+**/migrations/*/!(__init__.py)
+.env
+.venv
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
 # Images and Media (as per user request: "make sure no image is pushed there")
 # -------------------------------------------------------------------------
 *.png
@@ -81,5 +97,6 @@ dist/
 
 # Miscellaneous
 # -------------------------------------------------------------------------
-/jewelleryapp_pht-main/
-# (Excluding other subdirectories if they are redundant, but keeping jewelley---user-main as the core)
+# (Excluding other subdirectories if they are redundant)
+# /jewelleryapp_pht-main/ (Now included as backend)
+# /jewelleryapp_pht-user-main/ (The user-facing flutter app is already included)

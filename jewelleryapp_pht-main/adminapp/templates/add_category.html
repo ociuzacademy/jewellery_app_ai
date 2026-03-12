@@ -1,0 +1,82 @@
+{% extends "admin_index.html" %}
+
+{% block content %}
+<style>
+    .form-container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        max-width: 500px;
+        margin: 50px auto;
+        font-family: Arial, sans-serif;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0 5px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background-color: #6f4ec7;
+        color: white;
+        font-weight: bold;
+        text-transform: uppercase;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+    }
+
+    button:hover {
+        background-color: #5a3db5;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #6f4ec7;
+        box-shadow: 0 0 5px rgba(111, 78, 199, 0.5);
+    }
+    h2 {
+        font-size: 26px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        font-weight: 600;
+        color: #8ea7e9;
+        text-align: center;
+    }
+</style>
+
+<div class="form-container">
+    <h2>Add Category</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <label for="name">Category Name:</label>
+        <input type="text" name="name" required>
+
+        <label for="subcategories">Subcategories (comma separated):</label>
+        <input type="text" name="subcategories" required>
+
+        <label for="icon">Icon:</label>
+        <input type="file" name="icon">
+
+        <button type="submit">Add Category</button>
+    </form>
+</div>
+{% endblock %}
