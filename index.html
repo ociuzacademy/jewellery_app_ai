@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Jewelry Try-On - Necklace Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4/3;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 2px solid #333;
+        }
+
+        video,
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Mirror the outputs */
+        video#input_video,
+        canvas#output_canvas,
+        canvas#three_canvas {
+            transform: scaleX(-1);
+        }
+
+        #status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 30px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader {
+            border: 4px solid #333;
+            border-top: 4px solid #FFD700;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .controls {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        input[type="range"] {
+            width: 150px;
+        }
+
+        .necklace-selection {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .necklace-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #000;
+        }
+
+        .necklace-btn:hover {
+            transform: translateY(-5px) scale(1.1);
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .necklace-btn.active {
+            border-color: #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            transform: scale(1.1);
+        }
+
+        .necklace-label {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="debug-console"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 200px; overflow-y: scroll; background: rgba(0,0,0,0.8); color: lime; font-family: monospace; font-size: 10px; z-index: 9999; pointer-events: none;">
+    </div>
+
+    <div id="loading" class="loading-screen">
+        <div class="loader"></div>
+        <p>Loading AI Face Models & 3D Engine...</p>
+    </div>
+
+    <div id="ui-overlay">
+        <h1>GLAM AR</h1>
+        <p>Virtual Necklace Try-On</p>
+    </div>
+
+    <div class="controls">
+        <label>Necklace Vertical Position:</label>
+        <input type="range" id="yOffset" min="-1.0" max="1.0" step="0.05" value="0.4">
+        <label>Necklace Scale:</label>
+        <input type="range" id="nScale" min="0.5" max="3.0" step="0.1" value="1.5">
+        <hr style="border: 0.5px solid rgba(255,255,255,0.1); width: 100%;">
+        <label>Earring Vertical Offset:</label>
+        <input type="range" id="eYOffset" min="-0.5" max="0.5" step="0.01" value="0.05">
+        <label>Earring Horizontal Offset:</label>
+        <input type="range" id="eXOffset" min="-1.0" max="1.0" step="0.01" value="0.0">
+        <label>Earring Scale:</label>
+        <input type="range" id="eScale" min="0.1" max="1.0" step="0.05" value="0.3">
+    </div>
+
+    <div class="necklace-label">Choose Your Style</div>
+    <div class="necklace-selection">
+        <div class="necklace-btn active" onclick="switchNecklace('neck.png', this)"
+            style="background-image: url('neck.png');"></div>
+        <div class="necklace-btn" onclick="switchNecklace('daimond.png', this)"
+            style="background-image: url('daimond.png');"></div>
+    </div>
+
+    <div id="container">
+        <video id="input_video" autoplay muted playsinline></video>
+        <canvas id="output_canvas"></canvas>
+        <canvas id="three_canvas"></canvas>
+        <div id="status">Detection: Scanning for face...</div>
+    </div>
+
+    <!-- MediaPipe dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"
+        onerror="logError('Failed to load FaceMesh')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"
+        onerror="logError('Failed to load DrawingUtils')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"
+        onerror="logError('Failed to load CameraUtils')"></script>
+
+    <!-- Three.js dependency -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        onerror="logError('Failed to load Three.js')"></script>
+
+    <script>
+        // --- ON-SCREEN CONSOLE SETUP ---
+        const debugConsole = document.getElementById('debug-console');
+        function logToScreen(msg, color = 'lime') {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            div.style.color = color;
+            debugConsole.appendChild(div);
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+        }
+
+        function logError(msg) {
+            logToScreen(msg, 'red');
+            console.error(msg);
+        }
+
+        // Override console methods
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        console.log = function (...args) {
+            originalLog.apply(console, args);
+            logToScreen(args.join(' '));
+        };
+        console.error = function (...args) {
+            originalError.apply(console, args);
+            logToScreen(args.join(' '), 'red');
+        };
+        console.warn = function (...args) {
+            originalWarn.apply(console, args);
+            logToScreen(args.join(' '), 'orange');
+        };
+
+        window.onerror = function (message, source, lineno, colno, error) {
+            logError(`Uncaught: ${message} at ${source}:${lineno}`);
+        };
+
+        logToScreen('Starting App Initialization...');
+        console.log('Script started');
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const threeCanvas = document.getElementById('three_canvas');
+        const statusElement = document.getElementById('status');
+        const loadingScreen = document.getElementById('loading');
+
+        const yOffsetInput = document.getElementById('yOffset');
+        const nScaleInput = document.getElementById('nScale');
+        const eYOffsetInput = document.getElementById('eYOffset');
+        const eXOffsetInput = document.getElementById('eXOffset');
+        const eScaleInput = document.getElementById('eScale');
+
+        let yOffset = 0.4;
+        let nScale = 1.5;
+        let eYOffset = 0.05;
+        let eXOffset = 0.0;
+        let eScale = 0.3;
+
+        yOffsetInput.addEventListener('input', (e) => yOffset = parseFloat(e.target.value));
+        nScaleInput.addEventListener('input', (e) => nScale = parseFloat(e.target.value));
+        eYOffsetInput.addEventListener('input', (e) => eYOffset = parseFloat(e.target.value));
+        eXOffsetInput.addEventListener('input', (e) => eXOffset = parseFloat(e.target.value));
+        eScaleInput.addEventListener('input', (e) => eScale = parseFloat(e.target.value));
+
+        function switchNecklace(imagePath, btnElement) {
+            console.log('Switching necklace to:', imagePath);
+            // Update UI
+            document.querySelectorAll('.necklace-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Update Texture
+            textureLoader.load(imagePath, (texture) => {
+                necklaceMat.map = texture;
+                necklaceMat.needsUpdate = true;
+                console.log('Switched necklace texture successfully');
+            }, undefined, (error) => {
+                console.error('Error loading necklace texture:', error);
+            });
+        }
+
+        // --- Three.js Setup ---
+        console.log('Initializing Three.js...');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, 800 / 600, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: threeCanvas,
+            alpha: true,
+            antialias: true
+        });
+        renderer.setSize(800, 600);
+
+        // --- Real Necklace Image Setup ---
+        console.log('Loading textures...');
+        const textureLoader = new THREE.TextureLoader();
+        const necklaceTexture = textureLoader.load('neck.png',
+            () => {
+                console.log('neck.png loaded');
+                statusElement.innerText += " | Texture: OK";
+            },
+            null,
+            (e) => {
+                console.error('Error loading neck.png', e);
+                statusElement.innerText += " | Texture: ERR";
+            }
+        );
+
+        // Plane focused on the pendant area
+        const necklaceGeo = new THREE.PlaneGeometry(2, 2);
+        const necklaceMat = new THREE.MeshBasicMaterial({
+            map: necklaceTexture,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        const necklace = new THREE.Mesh(necklaceGeo, necklaceMat);
+        necklace.visible = false;
+        scene.add(necklace);
+
+        // DEBUG CUBE
+        const debugGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const debugMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        const debugCube = new THREE.Mesh(debugGeo, debugMat);
+        debugCube.position.set(0, 0, 0);
+        scene.add(debugCube);
+
+        // --- Earring Setup ---
+        const earringTexture = textureLoader.load('ears.png');
+        const earringGeo = new THREE.PlaneGeometry(1, 1);
+        const earringMat = new THREE.MeshBasicMaterial({
+            map: earringTexture,
+            transparent: true,
+            alphaTest: 0.5,
+            side: THREE.DoubleSide
+        });
+
+        const leftEarring = new THREE.Mesh(earringGeo, earringMat);
+        const rightEarring = new THREE.Mesh(earringGeo, earringMat);
+        leftEarring.visible = false;
+        rightEarring.visible = false;
+        scene.add(leftEarring);
+        scene.add(rightEarring);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(0, 1, 2);
+
+        camera.position.z = 3;
+
+        // --- MediaPipe Face Mesh Setup ---
+        console.log('Initializing MediaPipe Face Mesh...');
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                statusElement.innerText = "Face Detected | " + (necklaceMat.map ? "Tex: OK" : "Tex: NULL");
+                debugCube.material.color.setHex(0x00ff00); // GREEN = Face Found
+
+                necklace.visible = true;
+
+                const face = results.multiFaceLandmarks[0];
+
+                // 152 is Chin landmark
+                // 10 is Forehead landmark
+                const chin = face[152];
+                const forehead = face[10];
+
+                // Average face depth
+                const avgZ = (chin.z + forehead.z) / 2;
+
+                // Projection
+                const x = (chin.x - 0.5) * 4.5;
+                const y = -(chin.y - 0.5 + yOffset) * 3.5;
+                const z = -avgZ * 5;
+
+                necklace.position.set(x, y, z);
+
+                // Rotation based on face tilt
+                const dx = chin.x - forehead.x;
+                const dy = chin.y - forehead.y;
+                const angle = Math.atan2(dy, dx) - Math.PI / 2;
+                necklace.rotation.z = angle;
+
+                // Scaling based on face size
+                const faceSize = Math.sqrt(Math.pow(chin.x - forehead.x, 2) + Math.pow(chin.y - forehead.y, 2));
+                const scale = faceSize * 6 * nScale; // Adjusted multiplier for plane
+                necklace.scale.set(scale, scale, 1);
+
+                // --- Earring Positioning ---
+                // Landmarks: 177 (Right Ear), 401 (Left Ear)
+                const rEar = face[177];
+                const lEar = face[401];
+
+                if (rEar && lEar) {
+                    leftEarring.visible = true;
+                    rightEarring.visible = true;
+
+                    // Right Ear Position (3D space)
+                    const rex = (rEar.x - 0.5 + eXOffset) * 4.5;
+                    const rey = -(rEar.y - 0.5 + eYOffset) * 3.5;
+                    const rez = -rEar.z * 5;
+                    rightEarring.position.set(rex, rey, rez);
+
+                    // Left Ear Position (3D space)
+                    const lex = (lEar.x - 0.5 - eXOffset) * 4.5;
+                    const ley = -(lEar.y - 0.5 + eYOffset) * 3.5;
+                    const lez = -lEar.z * 5;
+                    leftEarring.position.set(lex, ley, lez);
+
+                    // Earring Scale
+                    const earringScale = faceSize * 2 * eScale;
+                    leftEarring.scale.set(earringScale, earringScale, 1);
+                    rightEarring.scale.set(earringScale, earringScale, 1);
+
+                    // Optional: Tilt earrings with face
+                    leftEarring.rotation.z = angle;
+                    rightEarring.rotation.z = angle;
+                }
+
+            } else {
+                statusElement.innerText = "No Face Detected | " + (necklaceMat.map ? "Tex: OK" : "Tex: NULL");
+                debugCube.material.color.setHex(0xff0000); // RED = No Face
+
+                // SHOW NECKLACE ANYWAY FOR DEBUGGING
+                necklace.visible = true;
+                necklace.position.set(0, 0, 0);
+                necklace.scale.set(1.5, 1.5, 1);
+                necklace.rotation.z = 0;
+
+                leftEarring.visible = false;
+                rightEarring.visible = false;
+            }
+
+            // Rotate cube for liveness
+            debugCube.rotation.x += 0.01;
+            debugCube.rotation.y += 0.01;
+
+            canvasCtx.restore();
+            renderer.render(scene, camera);
+        }
+
+        try {
+            const faceMesh = new FaceMesh({
+                locateFile: (file) => {
+                    const url = `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    console.log('Loading MediaPipe file:', file, 'from', url);
+                    return url;
+                }
+            });
+
+            faceMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            faceMesh.onResults(onResults);
+            console.log('FaceMesh configured');
+
+            const camera_utils = new Camera(videoElement, {
+                onFrame: async () => {
+                    try {
+                        await faceMesh.send({ image: videoElement });
+                        if (loadingScreen.style.opacity !== '0') {
+                            console.log('First frame processed, hiding loader');
+                            loadingScreen.style.opacity = '0';
+                            setTimeout(() => loadingScreen.style.display = 'none', 500);
+                        }
+                    } catch (e) {
+                        console.error('Error in onFrame:', e);
+                    }
+                },
+                width: 640,
+                height: 480
+            });
+
+            console.log('Starting camera...');
+            camera_utils.start()
+                .then(() => console.log('Camera started successfully'))
+                .catch(e => console.error('Failed to start camera:', e));
+
+        } catch (e) {
+            console.error('Initialization error:', e);
+            statusElement.innerText = "Error: " + e.message;
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+# Perfect .gitignore for jewellery_app_ai
+
+# Flutter / Dart
+# -------------------------------------------------------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Android specific
+# -------------------------------------------------------------------------
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+*.class
+*.dex
+*.apk
+*.aar
+*.jar
+*.flat
+intermediate-payload.json
+**/android/.gradle/
+**/android/local.properties
+**/android/**/generated/
+
+# iOS / macOS specific
+# -------------------------------------------------------------------------
+*.DS_Store
+*.swp
+*.lock
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.pbxuser
+*.xcuserstate
+xcuserdata/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Pods/
+**/macos/Pods/
+
+# Web specific
+# -------------------------------------------------------------------------
+node_modules/
+.npm/
+dist/
+.env
+
+# IDE files
+# -------------------------------------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Images and Media (as per user request: "make sure no image is pushed there")
+# -------------------------------------------------------------------------
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
+*.pdf
+/assets/images/
+/assets/icons/
+/assets/try_on/
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+
+# Exceptions (if any specific image is absolutely necessary and non-copyrighted)
+# !/assets/images/placeholder.png
+
+# Miscellaneous
+# -------------------------------------------------------------------------
+/jewelleryapp_pht-main/
+# (Excluding other subdirectories if they are redundant, but keeping jewelley---user-main as the core)
